@@ -44,3 +44,9 @@ Thumbs.db
 *.log
 logs/
 log/
+
+# Credentials
+*serviceAccountKey.json
+*credentials.json
+*secret*
+Backend/auth/serviceAccountKey.json
