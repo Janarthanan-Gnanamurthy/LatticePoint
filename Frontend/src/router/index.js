@@ -2,6 +2,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import DataProcessor from '../components/DataProcessor.vue';
 import DashboardBuilder from '../components/DashboardBuilder.vue';
+import Register from '@/components/Register.vue';
 import Login from '../components/login.vue';
 import { useAuthStore } from '../stores/authStore.js'
 
@@ -18,9 +19,16 @@ const routes = [
     component: DashboardBuilder,
     meta: { requiresAuth: true } 
   },
+  {
+    path: '/register',
+    name: 'Register',
+    component: Register,
+    meta: { requiresGuest: true } 
+  },
   { 
     path: '/login', 
-    component: Login 
+    component: Login,
+    meta: { requiresGuest: true }
   },
 ];
 
@@ -30,26 +38,23 @@ const router = createRouter({
 });
 
 
-// Navigation guard for authentication
-// router.beforeEach((to, from, next) => {
-//   const authStore = useAuthStore()
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore();
   
-//   // Check if route requires authentication
-//   if (to.matched.some(record => record.meta.requiresAuth)) {
-//     // If not authenticated, redirect to login
-//     if (!authStore.isAuthenticated) {
-//       next('/login')
-//       return
-//     }
-//   }
+  // Wait for auth to initialize if it hasn't already
+  if (authStore.loading) {
+    await authStore.initialize();
+  }
   
-//   // If trying to access login while already authenticated, redirect to dashboard
-//   if (to.path === '/login' && authStore.isAuthenticated) {
-//     next('/dashboard')
-//     return
-//   }
+  const isLoggedIn = !!authStore.user;
   
-//   next()
-// })
+  if (to.meta.requiresAuth && !isLoggedIn) {
+    next('/login');
+  } else if (to.meta.requiresGuest && isLoggedIn) {
+    next({ name: 'DataProcessor' });
+  } else {
+    next();
+  }
+});
 
 export default router;

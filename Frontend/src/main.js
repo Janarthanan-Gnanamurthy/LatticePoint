@@ -12,18 +12,7 @@ const pinia = createPinia(); // Create a Pinia instance
 app.use(pinia);
 app.use(router)
 
-// Add store to global properties for Options API access
-app.config.globalProperties.$store = {
-    auth: {
-      signInWithGoogle() {
-        return this.auth.signInWithGoogle()
-      },
-      signOut() {
-        return this.auth.signOut()
-      },
-      ...pinia.state.value.auth
-    }
-  }
+
 
 
 app.mount('#app')

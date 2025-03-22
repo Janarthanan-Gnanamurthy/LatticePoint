@@ -125,10 +125,11 @@
 		<!-- Results Section -->
 		<div v-if="processedData" class="card bg-base-100 shadow-xl">
 				<!-- Visualization Result -->
-				<div v-if="processedData.type === 'visualization'" class="card-body">
-						<h2 class="card-title">{{ processedData.visualization?.options?.plugins?.title?.text || 'Visualization' }}</h2>
-						<div class="chart-container">
-								<canvas ref="chartCanvas"></canvas>
+				<div v-if="processedData.type === 'visualization'" class="card-body p-6">
+						<div class="chart-wrapper bg-white rounded-lg shadow p-4">
+								<div class="chart-container">
+										<canvas ref="chartCanvas"></canvas>
+								</div>
 						</div>
 				</div>
 				
@@ -206,75 +207,75 @@ export default {
 	},
 
 	setup() {
-    const dataStore = useDataStore();
-    const router = useRouter();
-    return { dataStore, router };
-  },
+	const dataStore = useDataStore();
+	const router = useRouter();
+	return { dataStore, router };
+	},
 
 	methods: {
 		handleFileUpload(event) {
-      const newFiles = Array.from(event.target.files);
-      
-      // Validate file types
-      const invalidFiles = newFiles.filter(file => !file.name.toLowerCase().endsWith('.csv'));
-      if (invalidFiles.length > 0) {
-        alert('Only CSV files are supported');
-        return;
-      }
+		const newFiles = Array.from(event.target.files);
+		
+		// Validate file types
+		const invalidFiles = newFiles.filter(file => !file.name.toLowerCase().endsWith('.csv'));
+		if (invalidFiles.length > 0) {
+		alert('Only CSV files are supported');
+		return;
+		}
 
-      this.files = [...this.files, ...newFiles];
-      this.loadPreviewData(newFiles);
-    },
+		this.files = [...this.files, ...newFiles];
+		this.loadPreviewData(newFiles);
+	},
 
-    loadPreviewData(newFiles) {
-      newFiles.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target.result;
-          const lines = content.split('\n');
-          const headers = this.headers = lines[0].split(',');
-          const rows = this.rows = lines.slice(1)
-            .filter(line => line.trim())
-            .map(line => line.split(','));
-          
-          this.previewData.push({
-            headers,
-            displayedRows: rows.slice(0, 5),
-            totalRows: rows.length
-          });
-        };
-        reader.readAsText(file);
-      });
-    },
+	loadPreviewData(newFiles) {
+		newFiles.forEach(file => {
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const content = e.target.result;
+			const lines = content.split('\n');
+			const headers = this.headers = lines[0].split(',');
+			const rows = this.rows = lines.slice(1)
+			.filter(line => line.trim())
+			.map(line => line.split(','));
+			
+			this.previewData.push({
+			headers,
+			displayedRows: rows.slice(0, 5),
+			totalRows: rows.length
+			});
+		};
+		reader.readAsText(file);
+		});
+	},
 
-    removeFile(index) {
-      this.files.splice(index, 1);
-      this.previewData.splice(index, 1);
-      
-      // If no files remain, clear the headers and rows
-      if (this.files.length === 0) {
-        this.headers = [];
-        this.rows = [];
-      }
-    },
+	removeFile(index) {
+		this.files.splice(index, 1);
+		this.previewData.splice(index, 1);
+		
+		// If no files remain, clear the headers and rows
+		if (this.files.length === 0) {
+		this.headers = [];
+		this.rows = [];
+		}
+	},
 
-    goToDashboard() {
-      if (!this.files.length) {
-        alert('Please upload a file first.');
-        return;
-      }
+	goToDashboard() {
+		if (!this.files.length) {
+		alert('Please upload a file first.');
+		return;
+		}
 
-      // Store the data in Pinia
-      this.dataStore.setData(
-        this.files,
-        this.previewData,
-        this.headers,
-        this.rows
-      );
+		// Store the data in Pinia
+		this.dataStore.setData(
+		this.files,
+		this.previewData,
+		this.headers,
+		this.rows
+		);
 
-      // Navigate to dashboard builder
-      this.router.push({ name: 'DashboardBuilder' });
-    },
+		// Navigate to dashboard builder
+		this.router.push({ name: 'DashboardBuilder' });
+	},
 
 
 		async processData() {
@@ -293,7 +294,7 @@ export default {
 				});
 				formData.append('prompt', this.userPrompt);
 
-				const response = await fetch('http://localhost:8000/process', {
+				const response = await fetch('http://localhost:8000/api/process', {
 					method: 'POST',
 					body: formData,
 				});
@@ -303,10 +304,12 @@ export default {
 				}
 
 				const result = await response.json();
+				console.log('Received data from backend:', result);
 				this.processedData = result;
 
 				// If it's a visualization, create the chart
 				if (result.type === 'visualization') {
+					console.log('Visualization data:', result.visualization);
 					this.$nextTick(() => this.updateChart());
 				}
 			} catch (error) {
@@ -320,41 +323,114 @@ export default {
 		async updateChart() {
 			if (this.chartInstance) {
 				this.chartInstance.destroy();
-				this.chartInstance = null;
 			}
-			// if (!this.isDataValid) return;
+
 			try {
-				const ctx = this.$refs.chartCanvas?.getContext('2d');
-				if (!ctx) return;
-				const chartConfig = JSON.parse(JSON.stringify(this.processedData.visualization));
-				chartConfig.options = {
-				...chartConfig.options,
-				responsive: true,
-				maintainAspectRatio: false,
-				plugins: {
-					...chartConfig.options.plugins,
-					tooltip: {
-					callbacks: {
-						label: (context) => `Revenue: ${this.formatCurrency(context.raw)}`,
+				const canvas = this.$refs.chartCanvas;
+				if (!canvas) {
+					console.error('Chart canvas element not found');
+					return;
+				}
+
+				const ctx = canvas.getContext('2d');
+				if (!ctx) {
+					console.error('Chart canvas context not found');
+					return;
+				}
+
+				const chartData = this.processedData?.visualization;
+				console.log('Chart data before creation:', chartData);
+				
+				if (!chartData) {
+					console.error('No visualization data available');
+					return;
+				}
+
+				// Wait for the next tick to ensure canvas is ready
+				await this.$nextTick();
+
+				// Ensure proper canvas dimensions
+				canvas.style.height = '400px';
+				canvas.style.width = '100%';
+
+				// Create chart configuration
+				const chartConfig = {
+					type: chartData.type,
+					data: {
+						labels: chartData.data.labels,
+						datasets: chartData.data.datasets.map(dataset => ({
+							...dataset,
+							backgroundColor: dataset.backgroundColor,
+							borderColor: dataset.borderColor,
+							borderWidth: 1,
+							barThickness: 50, // Add fixed bar thickness
+							maxBarThickness: 75, // Maximum bar thickness
+							minBarLength: 2 // Minimum bar length in pixels
+						}))
 					},
-					},
-				},
-				scales: {
-					...chartConfig.options.scales,
-					y: {
-					...chartConfig.options.scales.y,
-					ticks: {
-						callback: (value) => this.formatCurrency(value),
-					},
-					},
-				},
+					options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						animation: {
+							duration: 1000
+						},
+						plugins: {
+							legend: {
+								position: 'top',
+								labels: {
+									font: {
+										size: 12
+									}
+								}
+							},
+							title: {
+								display: true,
+								text: chartData.options.plugins.title.text,
+								font: {
+									size: 16,
+									weight: 'bold'
+								}
+							}
+						},
+						scales: {
+							y: {
+								beginAtZero: true,
+								ticks: {
+									callback: (value) => this.formatCurrency(value),
+									font: {
+										size: 11
+									}
+								},
+								grid: {
+									display: true,
+									drawBorder: true,
+									drawOnChartArea: true
+								}
+							},
+							x: {
+								grid: {
+									display: false
+								},
+								ticks: {
+									font: {
+										size: 11
+									}
+								}
+							}
+						}
+					}
 				};
+
+				console.log('Final chart configuration:', chartConfig);
+				
+				// Create new chart instance
 				this.chartInstance = new Chart(ctx, chartConfig);
+
 			} catch (error) {
 				console.error('Error creating chart:', error);
-				this.$emit('chart-error', error);
+				console.error('Error details:', error.message);
 			}
-			},
+		},
 		formatCurrency(value) {
 			return new Intl.NumberFormat('en-IN', {
 				style: 'currency',
@@ -388,9 +464,19 @@ export default {
 </script>
 
 <style scoped>
+.chart-wrapper {
+	width: 100%;
+	margin: 0 auto;
+}
+
 .chart-container {
 	position: relative;
 	height: 400px;
 	width: 100%;
+	margin: 0 auto;
+}
+
+canvas {
+	background-color: white;
 }
 </style>

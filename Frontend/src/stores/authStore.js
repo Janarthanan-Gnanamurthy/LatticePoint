@@ -1,86 +1,99 @@
 import { defineStore } from 'pinia';
-import { firebaseAuth } from '../firebase.js';
-import axios from 'axios';
+import { ref } from 'vue';
+import { authService } from '../services/authService';
+import { apiClient } from '../services/apiService';
 
-export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    user: null,
-    isAuthenticated: false,
-    loading: false,
-    error: null
-  }),
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref(null);
+  const loading = ref(true);
+  const error = ref(null);
 
-  actions: {
-    async signInWithGoogle() {
-      this.loading = true;
-      this.error = null;
-
-      try {
-        // Sign in with Firebase
-        const firebaseUser = await firebaseAuth.signInWithGoogle();
-        
-        // Get Firebase token
-        const token = await firebaseUser.getIdToken();
-
-        // Send token to backend for verification and user creation/login
-        const response = await axios.post('/api/auth/login', { 
-          token,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName
-        });
-
-        // Update store with user info from backend
-        this.user = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL
-        };
-        this.isAuthenticated = true;
-      } catch (error) {
-        this.error = error.message;
-        this.isAuthenticated = false;
-      } finally {
-        this.loading = false;
+  async function initialize() {
+    loading.value = true;
+    try {
+      user.value = await authService.getCurrentUser();
+      if (user.value) {
+        // Verify token with backend
+        await apiClient.post('http://127.0.0.1:8000/api/auth/verify-token');
       }
-    },
-
-    async signOut() {
-      this.loading = true;
-      this.error = null;
-
-      try {
-        // Sign out from Firebase
-        await firebaseAuth.signOutUser();
-        
-        // Call backend logout endpoint
-        await axios.post('/api/auth/logout');
-
-        // Reset store
-        this.user = null;
-        this.isAuthenticated = false;
-      } catch (error) {
-        this.error = error.message;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    initializeAuth() {
-      firebaseAuth.onAuthStateChange((user) => {
-        if (user) {
-          this.user = {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL
-          };
-          this.isAuthenticated = true;
-        } else {
-          this.user = null;
-          this.isAuthenticated = false;
-        }
-      });
+    } catch (err) {
+      console.error('Auth initialization error:', err);
+      error.value = err.message;
+      user.value = null;
+    } finally {
+      loading.value = false;
     }
   }
+
+  async function register(email, password) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const newUser = await authService.register(email, password);
+      user.value = newUser;
+      // Create user profile in backend
+      await apiClient.post('http://127.0.0.1:8000/api/user/profile');
+      return newUser;
+    } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function login(email, password) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const loggedInUser = await authService.login(email, password);
+      user.value = loggedInUser;
+      return loggedInUser;
+    } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function loginWithGoogle() {
+    loading.value = true;
+    error.value = null;
+    try {
+      const loggedInUser = await authService.loginWithGoogle();
+      user.value = loggedInUser;
+      // Check if it's a new user and create profile if needed
+      await apiClient.post('http://127.0.0.1:8000/api/user/profile');
+      return loggedInUser;
+    } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function logout() {
+    loading.value = true;
+    try {
+      await authService.logout();
+      user.value = null;
+    } catch (err) {
+      error.value = err.message;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  return {
+    user,
+    loading,
+    error,
+    initialize,
+    register,
+    login,
+    loginWithGoogle,
+    logout
+  };
 });
