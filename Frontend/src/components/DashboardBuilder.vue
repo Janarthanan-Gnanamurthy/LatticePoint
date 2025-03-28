@@ -1,6 +1,13 @@
 <template>
 	<div class="container mx-auto p-4">
-		<h1 class="text-3xl font-bold mb-4">Dashboard Builder</h1>
+		<div class="flex justify-between items-center mb-4">
+			<h1 class="text-3xl font-bold">Dashboard Builder</h1>
+			<DeployDashboard 
+				v-if="dashboardWidgets.length > 0" 
+				:dashboardWidgets="dashboardWidgets" 
+				:datasetInfo="{ headers: dataStore.headers, rows: dataStore.rows }"
+			/>
+		</div>
 		
 		<!-- Loading State -->
 		<div v-if="!dataStore.headers.length" class="text-center py-8">
@@ -18,6 +25,39 @@
 			<!-- Widget Selection Sidebar -->
 			<div class="w-1/4 bg-white rounded-lg shadow p-4">
 				<h2 class="text-xl font-semibold mb-4">Add Widgets</h2>
+				
+				<!-- AI Dashboard Generator -->
+				<div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+					<h3 class="font-semibold text-blue-700 mb-2">AI Dashboard Generator</h3>
+					<p class="text-sm text-gray-600 mb-2">Describe what you want to visualize and let AI create widgets for you.</p>
+					<div class="space-y-2">
+						<input 
+							v-model="dashboardPrompt" 
+							class="w-full p-2 border rounded"
+							placeholder="E.g., Show sales by region and a table of top products"
+							@keyup.enter="generateDashboard"
+						/>
+						<button 
+							@click="generateDashboard" 
+							class="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center justify-center"
+							:disabled="isGenerating"
+						>
+							<span v-if="isGenerating">
+								<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+								Generating...
+							</span>
+							<span v-else>Generate Dashboard</span>
+						</button>
+					</div>
+				</div>
+				
+				<div class="my-4 border-t pt-4">
+					<h3 class="font-semibold mb-2">Or Add Manually</h3>
+				</div>
+				
 				<div class="space-y-2">
 					<button 
 						v-for="widget in availableWidgets" 
@@ -180,6 +220,8 @@ import ChartWidget from './widgets/ChartWidget.vue';
 import TableWidget from './widgets/TableWidget.vue';
 import InsightWidget from './widgets/InsightWidget.vue';
 import StatWidget from './widgets/StatWidget.vue';
+import { apiClient } from '@/services/apiService';
+import DeployDashboard from './DeployDashboard.vue';
 
 export default defineComponent({
 	name: 'DashboardBuilder',
@@ -188,7 +230,8 @@ export default defineComponent({
 		ChartWidget,
 		TableWidget,
 		InsightWidget,
-		StatWidget
+		StatWidget,
+		DeployDashboard
 	},
 
 	setup() {
@@ -201,6 +244,8 @@ export default defineComponent({
 		return {
 			dashboardWidgets: [],
 			selectedWidget: null,
+			dashboardPrompt: '',
+			isGenerating: false,
 			availableWidgets: [
 				{ type: 'chart', label: 'Chart Widget', icon: 'i-tabler-chart-bar' },
 				{ type: 'table', label: 'Data Table', icon: 'i-tabler-table' },
@@ -309,6 +354,46 @@ export default defineComponent({
 
 		saveDashboard() {
 			localStorage.setItem('dashboardLayout', JSON.stringify(this.dashboardWidgets));
+		},
+
+		async generateDashboard() {
+			if (!this.dashboardPrompt.trim() || this.isGenerating) return;
+			
+			this.isGenerating = true;
+			try {
+				// Convert data to the format expected by the backend
+				const columns = this.dataStore.headers;
+				const data = this.dataStore.rows.map(row => {
+					const rowObj = {};
+					row.forEach((value, index) => {
+						rowObj[columns[index]] = value;
+					});
+					return rowObj;
+				});
+				
+				const response = await apiClient.post('http://localhost:8000/api/generate-dashboard', {
+					prompt: this.dashboardPrompt,
+					columns: columns,
+					data: data 
+				});
+				console.log(response);
+
+				if (response.data && response.data.widgets) {
+					// Add all generated widgets
+					this.dashboardWidgets = response.data.widgets;
+					
+					// Save to localStorage
+					this.saveDashboard();
+					
+					// Clear prompt
+					this.dashboardPrompt = '';
+				}
+			} catch (error) {
+				console.error('Error generating dashboard:', error);
+				alert('Failed to generate dashboard. Please try again with a different prompt.');
+			} finally {
+				this.isGenerating = false;
+			}
 		}
 	}
 });

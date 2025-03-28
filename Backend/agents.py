@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 # Ollama configuration
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-MODEL_NAME = os.getenv("OLLAMA_MODEL", "deepseek-r1:8b")
+MODEL_NAME = os.getenv("OLLAMA_MODEL", "gemma3:4b")
 
 async def generate_with_ollama(prompt, temperature=0.5):
     """Generate response using Ollama with the specified model."""
@@ -66,7 +66,7 @@ Example response format:
 {json.dumps(response_format)}"""
 
     try:
-        json_text = await generate_with_ollama(input_text, temperature=0.5)
+        json_text = await generate_with_ollama(input_text, temperature=0.4)
         
         # Try to extract JSON from markdown code blocks if present
         json_match = re.search(r"```(?:json)?\n(.*?)\n```", json_text, re.DOTALL)
@@ -150,16 +150,62 @@ async def get_transformation_code(prompt: str, columns: list) -> str:
 
 Available columns: {columns_context}
 
+PySpark Knowledge Base:
+1. DataFrame Operations:
+   - select(): Select columns
+   - filter()/where(): Filter rows
+   - groupBy(): Group data
+   - orderBy(): Sort data
+   - withColumn(): Add/modify columns
+   - drop(): Remove columns
+   - distinct(): Remove duplicates
+   - union(): Combine DataFrames
+   - join(): Join DataFrames
+
+2. Common Functions:
+   - F.col(): Reference column
+   - F.lit(): Create literal value
+   - F.when().otherwise(): Conditional logic
+   - F.concat(): Concatenate strings
+   - F.split(): Split strings
+   - F.regexp_replace(): Replace using regex
+   - F.to_date(): Convert to date
+   - F.date_format(): Format date
+   - F.round(): Round numbers
+   - F.sum(), F.avg(), F.count(): Aggregations
+
+3. Window Functions:
+   - Window.partitionBy(): Partition data
+   - F.row_number(): Row numbering
+   - F.rank(): Rank values
+   - F.lag(): Access previous row
+   - F.lead(): Access next row
+
+4. Data Quality:
+   - na.fill(): Fill null values
+   - na.drop(): Drop null values
+   - na.replace(): Replace values
+   - dropDuplicates(): Remove duplicates
+
 Requirements:
 1. Use PySpark DataFrame operations (pyspark.sql.functions as F)
 2. Handle missing values appropriately
 3. Store result in 'transformed_df'
-4. Return a Spark DataFrame
-5. Use proper type conversions if needed
+4. DO NOT define functions
+5. Return a Spark DataFrame
+6. Use proper type conversions if needed
+
+allowed_globals = '''
+    'spark': spark,
+    'F': F,
+    'df': df,
+    'datetime': datetime
+'''
 
 Available imports:
 - from pyspark.sql import functions as F
 - from pyspark.sql.types import *
+- from pyspark.sql.window import Window
 - datetime
 
 Example format:
@@ -167,8 +213,7 @@ python
 transformed_df = df.withColumn('new_column', F.col('column1') * F.col('column2'))
 transformed_df = transformed_df.na.fill(0)  # Handle nulls
 
-
-Provide only the code, no explanations."""
+Provide only the code, no explanations. DO NOT DEFINE functions, directly perform the operations on the df as it is the dataframe"""
 
     try:
         code = await generate_with_ollama(input_text, temperature=0.5)
@@ -189,19 +234,62 @@ async def get_statistical_code(prompt: str, columns: list) -> str:
 
 Available columns: {', '.join(columns)}
 
+PySpark Statistical Knowledge Base:
+1. Basic Statistics:
+   - F.mean(): Calculate mean
+   - F.stddev(): Calculate standard deviation
+   - F.variance(): Calculate variance
+   - F.min(), F.max(): Min/max values
+   - F.sum(): Sum values
+   - F.count(): Count values
+   - F.percentile_approx(): Approximate percentiles
+
+2. Correlation Analysis:
+   - Correlation.corr(): Calculate correlation matrix
+   - VectorAssembler: Create feature vectors
+   - Correlation.corr(): Pearson correlation
+
+3. Hypothesis Testing:
+   - ChiSquareTest: Chi-square test
+   - KolmogorovSmirnovTest: KS test
+   - TTest: T-test for means
+
+4. Feature Engineering:
+   - StandardScaler: Standardize features
+   - MinMaxScaler: Scale to range
+   - Normalizer: Normalize vectors
+   - Binarizer: Convert to binary
+
+5. Window Functions for Stats:
+   - Window.partitionBy(): Group for rolling stats
+   - F.avg().over(): Rolling average
+   - F.stddev().over(): Rolling std dev
+   - F.sum().over(): Rolling sum
+
 Requirements:
 1. Use PySpark SQL functions (pyspark.sql.functions as F)
 2. Include proper statistical computations
 3. Store result in 'stat_df'
-4. Return both the statistical results and any relevant metrics
-5. Handle null values appropriately
-6. Include interpretation of results
+4. DO NOT define functions
+5. Return both the statistical results and any relevant metrics
+6. Handle null values appropriately
+7. Include interpretation of results
+
+allowed_globals = '''
+    'spark': spark,
+    'F': F,
+    'df': df,
+    'datetime': datetime,
+    'VectorAssembler': VectorAssembler,
+    'Correlation': Correlation
+'''
 
 Available imports:
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
-from pyspark.ml.stat import Correlation
-from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.stat import Correlation, ChiSquareTest, KolmogorovSmirnovTest
+from pyspark.ml.feature import VectorAssembler, StandardScaler, MinMaxScaler
+from pyspark.sql.window import Window
 import numpy as np
 from scipy import stats
 
@@ -216,22 +304,29 @@ df_vector = assembler.transform(df)
 correlation = Correlation.corr(df_vector, 'features').collect()[0][0]
 stat_df = spark.createDataFrame([(correlation.toArray().tolist())], ['correlation_matrix'])
 
-
-For t-test:
+For rolling statistics:
 python
-# Calculate t-test using pandas
-pandas_df = df.select('group1', 'group2').toPandas()
-t_stat, p_value = stats.ttest_ind(pandas_df['group1'], pandas_df['group2'])
-stat_df = spark.createDataFrame([(float(t_stat), float(p_value))], ['t_statistic', 'p_value'])
+# Define window
+window_spec = Window.partitionBy('group').orderBy('date').rowsBetween(-30, 0)
+# Calculate rolling average
+df = df.withColumn('rolling_avg', F.avg('value').over(window_spec))
+# Calculate rolling standard deviation
+df = df.withColumn('rolling_std', F.stddev('value').over(window_spec))
 
+For hypothesis testing:
+python
+# Chi-square test
+chi_sq_test = ChiSquareTest.test(df, 'features', 'label').collect()[0]
+stat_df = spark.createDataFrame([(chi_sq_test.pValues, chi_sq_test.statistics)], ['p_values', 'statistics'])
 
-Provide only the code, no explanations."""
+Provide only the code, no explanations. DO NOT DEFINE functions, directly perform the operations on the df as it is the dataframe"""
 
     try:
         code = await generate_with_ollama(input_text, temperature=0.5)
         
         code_match = re.search(r"```python\n(.*?)\n```", code, re.DOTALL)
         code = code_match.group(1) if code_match else code
+        print(code)
         logger.debug(f"Generated statistical code response: {code}")
         return code
     except Exception as e:

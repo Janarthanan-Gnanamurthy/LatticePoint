@@ -35,6 +35,7 @@ The Dashboard Builder provides:
 - Interactive data filtering
 - Save and share functionality
 - Version history management
+- Deploy and share dashboards with anyone using Cloudflare Tunnels
 
 ### Using the Dashboard Builder
 
@@ -44,6 +45,32 @@ The Dashboard Builder provides:
 4. Configure data sources and chart settings
 5. Use natural language queries for data processing
 6. Save and share your dashboard configurations
+7. Click the "Share Dashboard" button to create a public URL for your dashboard
+
+### Sharing Dashboards
+
+The application includes a dashboard sharing feature using Cloudflare Tunnels:
+
+1. After building your dashboard, click the "Share Dashboard" button
+2. Enter a name for your dashboard
+3. The system will create a public URL that you can share with anyone
+4. Recipients can view your dashboard through their web browser without needing to install anything
+
+## Dashboard Viewer
+
+A standalone dashboard viewer application is included for viewing shared dashboards:
+
+1. Run the dashboard viewer: 
+   ```bash
+   # On Unix/Linux/Mac:
+   ./Backend/start_dashboard_viewer.sh
+   
+   # On Windows:
+   Backend\start_dashboard_viewer.bat
+   ```
+2. The viewer will start at http://localhost:8050
+3. Follow the instructions to set up Cloudflare Tunnels for public access
+4. Recipients can access dashboards using the public URL created by Cloudflare Tunnels
 
 ## Technologies Used
 

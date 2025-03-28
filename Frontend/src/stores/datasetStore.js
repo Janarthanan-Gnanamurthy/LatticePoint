@@ -8,7 +8,8 @@ export const useDataStore = defineStore('data', {
       files: [],
       previewData: [],
       headers: [],
-      rows: []
+      rows: [],
+      processedData: null
     }
   },
   
@@ -24,8 +25,18 @@ export const useDataStore = defineStore('data', {
         files: this.files,
         previewData: this.previewData,
         headers: this.headers,
-        rows: this.rows
+        rows: this.rows,
+        processedData: this.processedData
       }))
+    },
+    
+    setProcessedData(processedData) {
+      this.processedData = processedData
+      
+      // Update sessionStorage
+      const currentData = JSON.parse(sessionStorage.getItem('dataStore') || '{}')
+      currentData.processedData = processedData
+      sessionStorage.setItem('dataStore', JSON.stringify(currentData))
     },
     
     clearData() {
@@ -33,6 +44,7 @@ export const useDataStore = defineStore('data', {
       this.previewData = []
       this.headers = []
       this.rows = []
+      this.processedData = null
       
       // Clear from sessionStorage
       sessionStorage.removeItem('dataStore')

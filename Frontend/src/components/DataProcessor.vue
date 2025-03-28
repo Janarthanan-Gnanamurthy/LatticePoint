@@ -47,28 +47,31 @@
 		<div v-if="previewData.length > 0" class="bg-white rounded-lg shadow-md p-6 mb-6 overflow-x-auto">
 				<h3 class="text-lg font-semibold text-gray-900 mb-4">Data Preview</h3>
 				<div v-for="(fileData, index) in previewData" :key="index" class="mb-6">
-					<h4 class="text-md font-medium text-gray-700 mb-2">{{ files[index].name }}</h4>
-					<div class="overflow-x-auto">
-						<table class="table table-zebra w-full">
-							<thead>
-								<tr class="bg-gray-100">
-									<th v-for="header in fileData.headers" :key="header" class="px-4 py-2 text-left text-sm font-medium text-gray-900">
-										{{ header }}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="(row, rowIndex) in fileData.displayedRows" :key="rowIndex" class="border-t border-gray-200">
-									<td v-for="(cell, cellIndex) in row" :key="cellIndex" class="px-4 py-2 text-sm text-gray-600">
-										{{ cell }}
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-					<div class="mt-2 text-sm text-gray-500">
-						Showing {{ fileData.displayedRows.length }} of {{ fileData.totalRows }} rows
-					</div>
+						<h4 class="text-md font-medium text-gray-700 mb-2">
+								{{ files[index] && files[index].name ? files[index].name : 
+									(files[index] ? 'Transformed Data' : 'File ' + (index + 1)) }}
+						</h4>
+						<div class="overflow-x-auto">
+								<table class="table table-zebra w-full">
+										<thead>
+												<tr class="bg-gray-100">
+														<th v-for="header in fileData.headers" :key="header" class="px-4 py-2 text-left text-sm font-medium text-gray-900">
+																{{ header }}
+														</th>
+												</tr>
+										</thead>
+										<tbody>
+												<tr v-for="(row, rowIndex) in fileData.displayedRows" :key="rowIndex" class="border-t border-gray-200">
+														<td v-for="(cell, cellIndex) in row" :key="cellIndex" class="px-4 py-2 text-sm text-gray-600">
+																{{ cell }}
+														</td>
+												</tr>
+										</tbody>
+								</table>
+						</div>
+						<div class="mt-2 text-sm text-gray-500">
+								Showing {{ fileData.displayedRows.length }} of {{ fileData.totalRows }} rows
+						</div>
 				</div>
 		</div>
 
@@ -131,6 +134,20 @@
 										<canvas ref="chartCanvas"></canvas>
 								</div>
 						</div>
+						<div class="mt-4 flex justify-end gap-4">
+							<button @click="continueModification" class="btn btn-secondary">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+									<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
+								</svg>
+								Continue Modification
+							</button>
+							<button @click="downloadData" class="btn btn-primary">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+									<path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+								</svg>
+								Download Data
+							</button>
+						</div>
 				</div>
 				
 				<!-- Statistical Result -->
@@ -154,6 +171,20 @@
 										</tbody>
 								</table>
 						</div>
+						<div class="mt-4 flex justify-end gap-4">
+							<button @click="continueModification" class="btn btn-secondary">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+									<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
+								</svg>
+								Continue Modification
+							</button>
+							<button @click="downloadData" class="btn btn-primary">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+									<path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+								</svg>
+								Download Data
+							</button>
+						</div>
 				</div>
 				
 				<!-- Transformation Result -->
@@ -176,6 +207,20 @@
 												</tr>
 										</tbody>
 								</table>
+						</div>
+						<div class="mt-4 flex justify-end gap-4">
+							<button @click="continueModification" class="btn btn-secondary">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+									<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
+								</svg>
+								Continue Modification
+							</button>
+							<button @click="downloadData" class="btn btn-primary">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+									<path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+								</svg>
+								Download Data
+							</button>
 						</div>
 				</div>
 		</div>
@@ -207,9 +252,14 @@ export default {
 	},
 
 	setup() {
-	const dataStore = useDataStore();
-	const router = useRouter();
-	return { dataStore, router };
+		const dataStore = useDataStore();
+		const router = useRouter();
+		return { dataStore, router };
+	},
+
+	created() {
+		// Initialize the dataStore
+		this.dataStore = useDataStore();
 	},
 
 	methods: {
@@ -261,20 +311,38 @@ export default {
 
 	goToDashboard() {
 		if (!this.files.length) {
-		alert('Please upload a file first.');
-		return;
+			alert('Please upload a file first.');
+			return;
 		}
 
-		// Store the data in Pinia
-		this.dataStore.setData(
-		this.files,
-		this.previewData,
-		this.headers,
-		this.rows
-		);
-
-		// Navigate to dashboard builder
-		this.router.push({ name: 'DashboardBuilder' });
+		try {
+			// Use direct store import
+			const store = useDataStore();
+			console.log('Store accessed directly in goToDashboard', store);
+			
+			// Store the data directly in the store state
+			store.$state.files = this.files;
+			store.$state.previewData = this.previewData;
+			store.$state.headers = this.headers;
+			store.$state.rows = this.rows;
+			
+			// Save to sessionStorage manually
+			sessionStorage.setItem('dataStore', JSON.stringify({
+				files: this.files,
+				previewData: this.previewData,
+				headers: this.headers,
+				rows: this.rows,
+				processedData: null
+			}));
+			
+			console.log('Data stored for dashboard builder');
+			
+			// Navigate to dashboard builder
+			this.router.push({ name: 'DashboardBuilder' });
+		} catch (error) {
+			console.error('Error in goToDashboard:', error);
+			alert('An error occurred while preparing the dashboard. Please try again.');
+		}
 	},
 
 
@@ -288,10 +356,39 @@ export default {
 			this.processedData = null;
 
 			try {
+				console.log('Processing data with prompt:', this.userPrompt);
+				
 				const formData = new FormData();
-				this.files.forEach(file => {
-					formData.append('files', file);
-				});
+				
+				// Check if we're using real files or transformed data
+				const isRealFiles = this.files.some(file => file.size > 0);
+				
+				if (isRealFiles) {
+					// Original flow with real files
+					this.files.forEach(file => {
+						formData.append('files', file);
+					});
+				} else {
+					// We're working with transformed data
+					console.log('Using transformed data from previous operations');
+					
+					// Create a CSV representation of our data
+					const headers = this.headers;
+					const csvContent = [
+						headers.join(','),
+						...this.rows.map(row => 
+							headers.map(header => 
+								typeof row[header] === 'undefined' ? '' : row[header]
+							).join(',')
+						)
+					].join('\n');
+					
+					// Create a file from the CSV content
+					const transformedFile = new File([csvContent], 'transformed_data.csv', { type: 'text/csv' });
+					formData.append('files', transformedFile);
+					console.log('Created transformed file:', transformedFile);
+				}
+				
 				formData.append('prompt', this.userPrompt);
 
 				const response = await fetch('http://localhost:8000/api/process', {
@@ -438,9 +535,270 @@ export default {
 				maximumFractionDigits: 0,
 			}).format(value);
 		},
+		downloadData() {
+			let dataToDownload;
+			let filename = 'transformed_data.csv';
+
+			if (this.processedData.type === 'visualization') {
+				// For visualization data, we'll download the raw data
+				dataToDownload = this.processedData.visualization.data.datasets[0].data;
+				filename = 'visualization_data.csv';
+			} else if (this.processedData.type === 'statistical') {
+				// For statistical data
+				dataToDownload = this.processedData.data;
+				filename = 'statistical_analysis.csv';
+			} else {
+				// For transformed data
+				dataToDownload = this.processedData.data;
+				filename = 'transformed_data.csv';
+			}
+
+			// Convert data to CSV format
+			const headers = Object.keys(dataToDownload[0]);
+			const csvContent = [
+				headers.join(','),
+				...dataToDownload.map(row => 
+					headers.map(header => 
+						JSON.stringify(row[header])
+					).join(',')
+				)
+			].join('\n');
+
+			// Create and trigger download
+			const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+			const link = document.createElement('a');
+			const url = URL.createObjectURL(blob);
+			link.setAttribute('href', url);
+			link.setAttribute('download', filename);
+			link.style.visibility = 'hidden';
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+		},
+		continueModification() {
+			console.log('Continue Modification clicked', this.processedData);
+			
+			try {
+				// Use the direct store import instead of this.dataStore
+				const store = useDataStore();
+				console.log('Store accessed directly using useDataStore()', store);
+				
+				// Try setting the data directly using state management
+				store.$state.processedData = this.processedData;
+				console.log('Data stored directly in Pinia store state');
+				
+				// Clear the current prompt to allow for new modifications
+				this.userPrompt = '';
+				
+				// Handle different data types
+				if (this.processedData.type === 'visualization') {
+					// For visualization, extract the data from the chart
+					const datasets = this.processedData.visualization.data.datasets;
+					const labels = this.processedData.visualization.data.labels;
+					
+					console.log('Visualization data before conversion:', datasets, labels);
+					
+					// Create a format that can be displayed in the preview table
+					const data = labels.map((label, index) => {
+						const row = { Category: label };
+						datasets.forEach((dataset, datasetIndex) => {
+							row[dataset.label || `Series ${datasetIndex + 1}`] = dataset.data[index];
+						});
+						return row;
+					});
+					
+					const columns = ['Category', ...datasets.map((d, i) => d.label || `Series ${i + 1}`)];
+					
+					console.log('Converted visualization data:', data);
+					console.log('Columns:', columns);
+					
+					// Create a single new file representation
+					this.files = [new File([], 'visualization_data.csv')];
+					
+					// Update preview data - replace all existing preview data
+					this.previewData = [{
+						headers: columns,
+						displayedRows: data.slice(0, 5),
+						totalRows: data.length
+					}];
+					
+					this.headers = columns;
+					this.rows = data;
+					
+					console.log('Updated preview data for visualization', this.previewData);
+				} 
+				else if (this.processedData.type === 'statistical') {
+					// For statistical data
+					const columns = Object.keys(this.processedData.data[0] || {});
+					
+					console.log('Statistical data before conversion:', this.processedData.data);
+					console.log('Columns:', columns);
+					
+					// Create a single new file representation
+					this.files = [new File([], 'statistical_data.csv')];
+					
+					// Update preview data - replace all existing preview data
+					this.previewData = [{
+						headers: columns,
+						displayedRows: this.processedData.data.slice(0, 5),
+						totalRows: this.processedData.data.length
+					}];
+					
+					this.headers = columns;
+					this.rows = this.processedData.data;
+					
+					console.log('Updated preview data for statistical', this.previewData);
+				} 
+				else {
+					// For transformed data
+					console.log('Transformed data before conversion:', this.processedData.data);
+					console.log('Columns:', this.processedData.columns);
+					
+					// Create a single new file representation
+					this.files = [new File([], 'transformed_data.csv')];
+					
+					// Update preview data - replace all existing preview data
+					this.previewData = [{
+						headers: this.processedData.columns,
+						displayedRows: this.processedData.data.slice(0, 5),
+						totalRows: this.processedData.data.length
+					}];
+					
+					this.headers = this.processedData.columns;
+					this.rows = this.processedData.data;
+					
+					console.log('Updated preview data for transformed', this.previewData);
+				}
+				
+				// Force the reactivity update using nextTick
+				this.$nextTick(() => {
+					console.log('After nextTick - current previewData:', this.previewData);
+				});
+				
+				// Clear the processed data to hide the results section
+				this.processedData = null;
+				
+				// Scroll to the prompt input section and data preview
+				this.$nextTick(() => {
+					// First scroll to the data preview section
+					const previewSection = document.querySelector('.bg-white.rounded-lg.shadow-md.p-6.mb-6');
+					if (previewSection) {
+						console.log('Scrolling to preview section');
+						previewSection.scrollIntoView({ behavior: 'smooth' });
+						
+						// Then, after a short delay, scroll to the prompt section
+						setTimeout(() => {
+							const promptSection = document.querySelector('.textarea');
+							if (promptSection) {
+								console.log('Scrolling to prompt section');
+								promptSection.scrollIntoView({ behavior: 'smooth' });
+								promptSection.focus();
+							} else {
+								console.error('Prompt textarea not found');
+							}
+						}, 500);
+					} else {
+						console.error('Preview section not found');
+						// Just scroll to prompt if preview not found
+						const promptSection = document.querySelector('.textarea');
+						if (promptSection) {
+							promptSection.scrollIntoView({ behavior: 'smooth' });
+							promptSection.focus();
+						}
+					}
+				});
+				
+			} catch (error) {
+				console.error('Error in continueModification:', error);
+				console.error('Error stack:', error.stack);
+				alert('An error occurred while setting up for continued modifications. Please try again.');
+			}
+		},
 	},
 
 	mounted() {
+		console.log('Component mounted');
+		
+		try {
+			// Use direct store import
+			const store = useDataStore();
+			console.log('Store accessed directly in mounted', store);
+			
+			// Check if we have processed data in the store
+			const storeProcessedData = store.$state.processedData;
+			if (storeProcessedData) {
+				console.log('Found processed data in store:', storeProcessedData);
+				
+				// Handle it based on the type
+				if (storeProcessedData.type === 'visualization') {
+					const datasets = storeProcessedData.visualization.data.datasets;
+					const labels = storeProcessedData.visualization.data.labels;
+					
+					// Create a format that can be displayed in the preview table
+					const data = labels.map((label, index) => {
+						const row = { Category: label };
+						datasets.forEach((dataset, datasetIndex) => {
+							row[dataset.label || `Series ${datasetIndex + 1}`] = dataset.data[index];
+						});
+						return row;
+					});
+					
+					const columns = ['Category', ...datasets.map((d, i) => d.label || `Series ${i + 1}`)];
+					
+					this.previewData = [{
+						headers: columns,
+						displayedRows: data.slice(0, 5),
+						totalRows: data.length
+					}];
+					
+					this.headers = columns;
+					this.rows = data;
+					
+					// Create dummy File objects
+					this.files = [new File([], 'visualization_data.csv')];
+					
+					console.log('Initialized from visualization data in store');
+				} 
+				else if (storeProcessedData.type === 'statistical') {
+					const columns = Object.keys(storeProcessedData.data[0] || {});
+					
+					this.previewData = [{
+						headers: columns,
+						displayedRows: storeProcessedData.data.slice(0, 5),
+						totalRows: storeProcessedData.data.length
+					}];
+					
+					this.headers = columns;
+					this.rows = storeProcessedData.data;
+					
+					// Create dummy File objects
+					this.files = [new File([], 'statistical_data.csv')];
+					
+					console.log('Initialized from statistical data in store');
+				} 
+				else if (storeProcessedData.type === 'transformed') {
+					this.previewData = [{
+						headers: storeProcessedData.columns,
+						displayedRows: storeProcessedData.data.slice(0, 5),
+						totalRows: storeProcessedData.data.length
+					}];
+					
+					this.headers = storeProcessedData.columns;
+					this.rows = storeProcessedData.data;
+					
+					// Create dummy File objects
+					this.files = [new File([], 'transformed_data.csv')];
+					
+					console.log('Initialized from transformed data in store');
+				}
+				
+				// Clear the processed data from the store
+				store.$state.processedData = null;
+			}
+		} catch (error) {
+			console.error('Error in mounted hook:', error);
+		}
+		
 		if (this.processedData?.visualization) {
 			this.updateChart();
 		}
@@ -456,6 +814,12 @@ export default {
 		'processedData.visualization': {
 			handler() {
 				nextTick(() => this.updateChart());
+			},
+			deep: true
+		},
+		previewData: {
+			handler(newValue) {
+				console.log('previewData changed:', newValue);
 			},
 			deep: true
 		}

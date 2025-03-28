@@ -18,6 +18,8 @@ from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.linalg import Vectors
 from dotenv import load_dotenv
 from agents import analyze_prompt_intent, get_chart_config, get_transformation_code, get_statistical_code
+import uuid
+import json
 
 # Configure logging
 logging.basicConfig(
@@ -29,10 +31,6 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Initialize Spark with HDFS configuration
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel('gemini-1.5-pro')
-
-# Enhanced Spark configuration for Hadoop integration
 spark = SparkSession.builder \
     .appName("DataTransformation") \
     .config("spark.hadoop.fs.defaultFS", os.getenv("HDFS_NAMENODE_URL", "hdfs://0.0.0.0:19000")) \
@@ -296,7 +294,7 @@ async def process_data(files: List[UploadFile] = File(...), prompt: str = Form(.
             transformed_df = execute_transformation(transformation_code, combined_df)
             
             # Store the transformed data in HDFS
-            transformed_hdfs_path = f"{HDFS_BASE_PATH}/transformed_{datetime.now().strftime('%Y%m%d_%H%M%S%f')}"
+            transformed_hdfs_path = f"/tmp/transformed_{datetime.now().strftime('%Y%m%d_%H%M%S%f')}"
             transformed_spark_df = spark.createDataFrame(transformed_df)
             transformed_spark_df.write.parquet(transformed_hdfs_path, mode="overwrite")
             logger.info(f"Transformed data stored in HDFS at: {transformed_hdfs_path}")
@@ -324,3 +322,236 @@ async def process_data(files: List[UploadFile] = File(...), prompt: str = Form(.
                 logger.info(f"Hadoop file removed: {hadoop_path}")
             except Exception as delete_error:
                 logger.error(f"Error deleting Hadoop file {hadoop_path}: {delete_error}")
+
+@router.post("/generate-dashboard")
+async def generate_dashboard(prompt: str, columns: List[str], data: List[Dict[str, Any]]):
+    """Generate dashboard widgets based on natural language prompt."""
+    logger.info(f"Generating dashboard with prompt: {prompt}")
+    try:
+        # Analyze prompt to understand the user's intent
+        intent_analysis = await analyze_prompt_intent(prompt)
+        
+        # Generate widget configurations
+        widgets = []
+        
+        # Process based on intent
+        if "chart" in prompt.lower() or "plot" in prompt.lower() or "visualize" in prompt.lower() or intent_analysis['intent'] == 'visualization':
+            # Generate visualization widget(s)
+            chart_config = await get_chart_config(prompt, columns)
+            widgets.append({
+                "type": "chart",
+                "id": f"chart_{len(widgets)+1}",
+                "config": {
+                    "title": chart_config["title"],
+                    "chartType": chart_config["chart_type"],
+                    "xColumn": columns.index(chart_config["x_axis"]) if chart_config["x_axis"] in columns else 0,
+                    "yColumns": [columns.index(chart_config["y_axis"])] if chart_config["y_axis"] in columns else [1],
+                    "size": 2  # Medium size as default
+                }
+            })
+        
+        if "table" in prompt.lower():
+            # Generate table widget
+            widgets.append({
+                "type": "table",
+                "id": f"table_{len(widgets)+1}",
+                "config": {
+                    "title": "Data Table",
+                    "columns": list(range(min(5, len(columns)))),  # First 5 columns by default
+                    "showPagination": True,
+                    "size": 2  # Medium size as default
+                }
+            })
+        
+        if "stat" in prompt.lower() or "statistic" in prompt.lower() or intent_analysis['intent'] == 'statistical':
+            # Generate stat widget(s)
+            # Attempt to find a numeric column for statistics
+            numeric_columns = []
+            for i, col in enumerate(columns):
+                if any(isinstance(row.get(col), (int, float)) for row in data if row.get(col) is not None):
+                    numeric_columns.append(i)
+            
+            if numeric_columns:
+                widgets.append({
+                    "type": "stat",
+                    "id": f"stat_{len(widgets)+1}",
+                    "config": {
+                        "title": "Key Statistics",
+                        "column": numeric_columns[0],
+                        "metrics": ["avg", "min", "max"],
+                        "size": 1  # Small size as default
+                    }
+                })
+        
+        if "insight" in prompt.lower() or "analyze" in prompt.lower():
+            # Generate insight widget
+            text_prompt = f"Provide a brief data insight about the following columns: {', '.join(columns)}"
+            insight_text = await generate_with_ollama(text_prompt)
+            
+            widgets.append({
+                "type": "insight",
+                "id": f"insight_{len(widgets)+1}",
+                "config": {
+                    "title": "Data Insight",
+                    "text": insight_text,
+                    "size": 2  # Medium size as default
+                }
+            })
+        
+        # If no specific widgets were requested, generate a default dashboard
+        if not widgets:
+            # Create default dashboard with chart, table and stat
+            # Choose first column as x-axis and second as y-axis
+            x_col = 0
+            y_col = 1 if len(columns) > 1 else 0
+            
+            widgets = [
+                {
+                    "type": "chart",
+                    "id": "chart_1",
+                    "config": {
+                        "title": "Data Visualization",
+                        "chartType": "bar",
+                        "xColumn": x_col,
+                        "yColumns": [y_col],
+                        "size": 2
+                    }
+                },
+                {
+                    "type": "table",
+                    "id": "table_1",
+                    "config": {
+                        "title": "Data Table",
+                        "columns": list(range(min(5, len(columns)))),
+                        "showPagination": True,
+                        "size": 2
+                    }
+                }
+            ]
+            
+            # Add stat widget if we have numeric columns
+            numeric_columns = []
+            for i, col in enumerate(columns):
+                if any(isinstance(row.get(col), (int, float)) for row in data if row.get(col) is not None):
+                    numeric_columns.append(i)
+            
+            if numeric_columns:
+                widgets.append({
+                    "type": "stat",
+                    "id": "stat_1",
+                    "config": {
+                        "title": "Key Statistics",
+                        "column": numeric_columns[0],
+                        "metrics": ["avg", "min", "max"],
+                        "size": 1
+                    }
+                })
+        
+        # Arrange widgets in a layout (side by side where appropriate)
+        layout = []
+        current_row = []
+        total_size = 0
+        
+        for widget in widgets:
+            widget_size = widget["config"]["size"]
+            
+            # If adding this widget exceeds row width, start a new row
+            if total_size + widget_size > 4:
+                layout.append(current_row)
+                current_row = [widget]
+                total_size = widget_size
+            else:
+                current_row.append(widget)
+                total_size += widget_size
+        
+        # Add the last row if not empty
+        if current_row:
+            layout.append(current_row)
+        
+        return {
+            "widgets": widgets,
+            "layout": layout
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating dashboard: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating dashboard: {str(e)}")
+
+@router.post("/deploy-dashboard")
+async def deploy_dashboard(dashboard_data: dict):
+    """
+    Deploy a dashboard using Cloudflare Tunnels for public sharing.
+    
+    This is a prototype implementation that saves the dashboard data to a file
+    and creates a public URL using Cloudflare Tunnels.
+    """
+    try:
+        # Create a unique ID for the dashboard
+        dashboard_id = str(uuid.uuid4())
+        
+        # Sanitize dashboard name for filename
+        safe_name = "".join(c for c in dashboard_data["name"] if c.isalnum() or c in [' ', '_', '-']).strip()
+        safe_name = safe_name.replace(' ', '_').lower()
+        
+        # Create dashboards directory if it doesn't exist
+        os.makedirs("dashboards", exist_ok=True)
+        
+        # Ensure dataset structure is valid
+        if "dataset" not in dashboard_data:
+            dashboard_data["dataset"] = {"headers": [], "rows": []}
+        else:
+            # Validate dataset format
+            if not isinstance(dashboard_data["dataset"], dict):
+                dashboard_data["dataset"] = {"headers": [], "rows": []}
+            else:
+                if "headers" not in dashboard_data["dataset"] or not isinstance(dashboard_data["dataset"]["headers"], list):
+                    dashboard_data["dataset"]["headers"] = []
+                if "rows" not in dashboard_data["dataset"] or not isinstance(dashboard_data["dataset"]["rows"], list):
+                    dashboard_data["dataset"]["rows"] = []
+        
+        # Validate widgets
+        if "widgets" not in dashboard_data or not isinstance(dashboard_data["widgets"], list):
+            dashboard_data["widgets"] = []
+        
+        for widget in dashboard_data["widgets"]:
+            if "config" not in widget:
+                widget["config"] = {}
+            if "type" not in widget:
+                widget["type"] = "unknown"
+        
+        # Sanitize dashboard data to prevent JSON parsing errors when viewing
+        def sanitize_json_value(value):
+            if isinstance(value, str):
+                # Remove control characters that could break JSON parsing
+                return ''.join(c for c in value if ord(c) >= 32 or c in '\n\r\t')
+            elif isinstance(value, dict):
+                return {k: sanitize_json_value(v) for k, v in value.items()}
+            elif isinstance(value, list):
+                return [sanitize_json_value(item) for item in value]
+            else:
+                return value
+        
+        dashboard_data = sanitize_json_value(dashboard_data)
+        
+        # Save dashboard data to file
+        dashboard_path = f"dashboards/{safe_name}_{dashboard_id}.json"
+        with open(dashboard_path, "w") as f:
+            json.dump(dashboard_data, f)
+            
+        # In a production environment, you would use the Cloudflare API to create a tunnel
+        # For this prototype, we'll assume the Cloudflare tunnel is already running
+        # and serving the /dashboards directory
+        
+        # Generate a URL for the dashboard
+        tunnel_hostname = os.getenv("CLOUDFLARE_TUNNEL_HOSTNAME", "ai.edventuretech.in")
+        # Remove https:// if present
+        if tunnel_hostname.startswith("https://"):
+            tunnel_hostname = tunnel_hostname[8:]
+        elif tunnel_hostname.startswith("http://"):
+            tunnel_hostname = tunnel_hostname[7:]
+        
+        deploy_url = f"https://{tunnel_hostname}/view/{safe_name}_{dashboard_id}"
+        
+        return {"deployUrl": deploy_url, "dashboardId": dashboard_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deploying dashboard: {str(e)}")
