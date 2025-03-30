@@ -28,7 +28,7 @@ A sophisticated web application that combines data processing, analysis, and vis
 
 ## 🔄 Workflow
 
-![Interactive Data Analysis Workflow](./workflow.jpg)
+![Interactive Data Analysis Workflow](./workflow.png)
 
 ## 🛠️ Technologies Used
 
