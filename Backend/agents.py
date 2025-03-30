@@ -216,7 +216,7 @@ transformed_df = transformed_df.na.fill(0)  # Handle nulls
 Provide only the code, no explanations. DO NOT DEFINE functions, directly perform the operations on the df as it is the dataframe"""
 
     try:
-        code = await generate_with_ollama(input_text, temperature=0.5)
+        code = await generate_with_ollama(input_text, temperature=0.4)
         print(code)
         logger.debug(f"Generated transformation code response: {code}")
         code_match = re.search(r"```python\n(.*?)\n```", code, re.DOTALL)
@@ -322,7 +322,7 @@ stat_df = spark.createDataFrame([(chi_sq_test.pValues, chi_sq_test.statistics)],
 Provide only the code, no explanations. DO NOT DEFINE functions, directly perform the operations on the df as it is the dataframe"""
 
     try:
-        code = await generate_with_ollama(input_text, temperature=0.5)
+        code = await generate_with_ollama(input_text, temperature=0.3)
         
         code_match = re.search(r"```python\n(.*?)\n```", code, re.DOTALL)
         code = code_match.group(1) if code_match else code

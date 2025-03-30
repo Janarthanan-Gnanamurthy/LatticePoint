@@ -17,7 +17,7 @@ const routes = [
     path: '/dashboard-builder',
     name: 'DashboardBuilder',
     component: DashboardBuilder,
-    meta: { requiresAuth: true } 
+    meta: { requiresAuth: false } 
   },
   {
     path: '/register',
