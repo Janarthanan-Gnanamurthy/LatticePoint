@@ -6,7 +6,7 @@ A sophisticated web application that combines data processing, analysis, and vis
 
 ## 📑 Table of Contents
 - [✨ Features](#features)
-- [🔄 Workflow](#workflow)
+- [🔄 System Architecture](#system-architecture)
 - [🛠️ Technologies Used](#technologies-used)
 - [📋 Prerequisites](#prerequisites)
 - [⚙️ Installation](#installation)
@@ -26,7 +26,7 @@ A sophisticated web application that combines data processing, analysis, and vis
 - 🧠 Access AI-powered insights through Ollama integration
 - 🌐 Share dashboards publicly using Cloudflare Tunnels
 
-## 🔄 Workflow
+## 🔄 System Architecture
 
 ![Interactive Data Analysis Workflow](./workflow.png)
 
