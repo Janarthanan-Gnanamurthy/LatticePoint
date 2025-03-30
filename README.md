@@ -5,17 +5,17 @@ A sophisticated web application that combines data processing, analysis, and vis
 [![Watch the demo video](https://img.youtube.com/vi/nEpevi5AF5w/0.jpg)](https://www.youtube.com/watch?v=nEpevi5AF5w)
 
 ## 📑 Table of Contents
-- [✨ Features](#features)
-- [🔄 System Architecture](#system-architecture)
-- [🛠️ Technologies Used](#technologies-used)
-- [📋 Prerequisites](#prerequisites)
-- [⚙️ Installation](#installation)
-- [📝 Usage](#usage)
-- [🔌 API Structure](#api-structure)
-- [💻 Development](#development)
-- [🤝 Contributing](#contributing)
-- [📜 License](#license)
-- [🆘 Support](#support)
+- [✨ Features](#-features)
+- [🔄 System Architecture](#-system-architecture)
+- [🛠️ Technologies Used](#-technologies-used)
+- [📋 Prerequisites](#-prerequisites)
+- [⚙️ Installation](#-installation)
+- [📝 Usage](#-usage)
+- [🔌 API Structure](#-api-structure)
+- [💻 Development](#-development)
+- [🤝 Contributing](#-contributing)
+- [📜 License](#-license)
+- [🆘 Support](#-support)
 
 ## ✨ Features
 
@@ -28,7 +28,11 @@ A sophisticated web application that combines data processing, analysis, and vis
 
 ## 🔄 System Architecture
 
-![Interactive Data Analysis Workflow](./workflow.png)
+![Interactive Data Analysis system Architecture](./workflow.png)
+
+## Workflow
+
+![Interactive Data Analysis Workflow](./workflow-user.png)
 
 ## 🛠️ Technologies Used
 
@@ -57,8 +61,8 @@ A sophisticated web application that combines data processing, analysis, and vis
 
 ### 📥 Clone Repository
 ```bash
-git clone [repository-url]
-cd [project-directory]
+git clone https://github.com/Janarthanan-Gnanamurthy/LatticePoint.git
+cd LatticePoint
 ```
 
 ### 🖥️ Frontend Setup
